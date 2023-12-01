@@ -11,25 +11,28 @@ using UnityEngine;
 
 public class ApplyTransforms : MonoBehaviour
 {
-
-    public void SetDestination(Vector3 destination)
-    {
-        displacement = destination;
-    }
-
     [SerializeField] Vector3 displacement;
     [SerializeField] float angle;
     [SerializeField] float giro;
 
-//    [SerializeField] private Wheels[] wheelsTransforms;
+    [SerializeField] Vector3 startPos;
+    [SerializeField] Vector3 finalPos;
+    [Range(0.0f, 1.0f)]
+    [SerializeField] float t;
+
+    [SerializeField] float moveTime;
+
+    float elapsedTime = 0.0f;
+
+
     [SerializeField]  GameObject wheelPrefab;
     
     GameObject wheel1;
     GameObject wheel2;
     GameObject wheel3;
     GameObject wheel4;
-    [SerializeField] AXIS rotationAxis;
 
+    [SerializeField] AXIS rotationAxis;
 
 
     Mesh mesh;
@@ -135,24 +138,43 @@ public class ApplyTransforms : MonoBehaviour
         // Apply rotation to the wheels only
         Matrix4x4 rotateWheels = HW_Transforms.RotateMat(angle * Time.time, rotationAxis);
 
+        // Lerp ------------------------------------------------------
+        moveTime=1.0f;
+        t = elapsedTime / moveTime;
+        // Use a function to smooth the movement
+        t = t * t * (3.0f - 2.0f * t);
 
-       // Lo bueno ------------------------------------------------------
-        Matrix4x4 move = HW_Transforms.TranslationMat(displacement.x * Time.time,
-                                                      displacement.y * Time.time,
-                                                      displacement.z * Time.time);
+        // Interpolation function
+        // Vector3 position = startPos + (finalPos - startPos) * t;
+        Vector3 interpolated = Vector3.Lerp(startPos, finalPos, t);
+
+        // To move using matrix tansformations, put the vector 3 into a 
+        //  translation matrix, and apply to the vertices
+        Matrix4x4 move = HW_Transforms.TranslationMat(interpolated.x, interpolated.y, interpolated.z);
+
+        // Update time
+        elapsedTime += Time.deltaTime;
+
+
+
+       // ------------------------------------------------------
+
+
+
+
 
         Matrix4x4 rotate = HW_Transforms.RotateMat(angle * Time.time,
                                                     AXIS.X);
 
         Matrix4x4 rotateCar = HW_Transforms.RotateMat(giro, rotationAxis);
 
-        Matrix4x4 composite =  rotateCar * move;
+        Matrix4x4 composite =  move * rotateCar;
 
         //Apply the  Matrix4x4 moveWheels to wheel1
-        Matrix4x4 compositeWheel1 = rotateCar * moveW1 * move * rotate;
-        Matrix4x4 compositeWheel2 = rotateCar * moveW2 * move * rotate;
-        Matrix4x4 compositeWheel3 = rotateCar * moveW3 * move * rotate;
-        Matrix4x4 compositeWheel4 = rotateCar * moveW4 * move * rotate;
+        Matrix4x4 compositeWheel1 = move * rotateCar * moveW1 * rotate;
+        Matrix4x4 compositeWheel2 = move * rotateCar * moveW2 * rotate;
+        Matrix4x4 compositeWheel3 = move * rotateCar * moveW3 * rotate;
+        Matrix4x4 compositeWheel4 = move * rotateCar * moveW4 * rotate;
 
         // Apply the  Matrix4x4 moveWheels to wheel2
 
